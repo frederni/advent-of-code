@@ -1,7 +1,14 @@
-def get_card_mapping():
+import time
+import timeit
+
+
+def get_card_mapping(part_2: bool):
     card_values = {"T": 10, "J": 11, "Q": 12, "K": 13, "A": 14}
     card_values.update({str(i): i for i in range(2, 10)})
+    if part_2:
+        card_values["J"] = 1
     return card_values
+
 
 def get_rank_mapping():
     return {
@@ -16,21 +23,25 @@ def get_rank_mapping():
 
 
 def parse_input(filename):
-    hands, bets = [], []
     with open(filename, "r") as f:
-        for line in f:
-            line = line.strip()
-            h, b = line.split()
-            hands.append(h)
-            bets.append(int(b))
-    return hands, bets
+        data = [line.strip().split() for line in f]
+    hands, bets = zip(*((h, int(b)) for h, b in data))
+    return list(hands), list(bets)
 
 
-def get_type_from_hand(hand: str):
+def get_type_from_hand(hand: str, part_2: bool):
     chrs = set(hand)
+    if part_2:
+        chrs = chrs - {"J"}
+        if len(chrs) == 0:  # All Jokers
+            return "five of a kind"
     frequency = {chr: hand.count(chr) for chr in chrs}
     largest_value = max(frequency.values())
     largest_keys = [k for k, v in frequency.items() if v == largest_value]
+    if part_2:
+        jokers = hand.count("J")
+        frequency[largest_keys[0]] += jokers
+        largest_value += jokers
 
     if largest_value == 5:
         return "five of a kind"
@@ -47,27 +58,29 @@ def get_type_from_hand(hand: str):
     return "high card"
 
 
-def part_1(filename="input7.txt"):
+def get_winnings(filename="input7.txt", part_2: bool = False):
     """
     First segment by hand type and sort by hand value within each hand type
     This is faster than sorting on all hand types
     """
-    mapping = get_card_mapping()
-    hands_by_type = dict()
+    mapping = get_card_mapping(part_2)
+    hands_by_type: dict[str, list[tuple[str, int]]] = dict()
 
     hand_list, bet_list = parse_input(filename)
     for hand, bet in zip(hand_list, bet_list):
-        hand_type = get_type_from_hand(hand)
-        hands_by_type[hand_type] = hands_by_type.get(hand_type, []) + [[hand, bet]]
-    
+        hand_type = get_type_from_hand(hand, part_2)
+        hands_by_type[hand_type] = hands_by_type.get(hand_type, []) + [(hand, bet)]
+
     # Assign rank for each hand per hand type
     rank_offset = 1
-    all_data = []
+    all_data: list[list] = []
     for key in sorted(hands_by_type.keys(), key=get_rank_mapping().get):
         hand_data = sorted(
             hands_by_type[key], key=lambda x: [mapping[card] for card in x[0]]
         )
-        hand_data_ranked = [d + [idx + rank_offset] for idx, d in enumerate(hand_data)]
+        hand_data_ranked = [
+            list(d) + [idx + rank_offset] for idx, d in enumerate(hand_data)
+        ]
         all_data.extend(hand_data_ranked)
         rank_offset = rank_offset + len(hand_data_ranked)
 
@@ -76,16 +89,16 @@ def part_1(filename="input7.txt"):
     return winnings
 
 
-def part_2():
-    pass
+def performance_test(part_2: bool, n_runs: int = 1000):
+    timing = timeit.timeit(
+        "get_winnings(part_2=part_2)",
+        globals=locals(),
+        setup="from __main__ import get_winnings",
+        number=n_runs,
+    )
+    print(f"Part {int(part_2) + 1} took {timing} seconds to run {n_runs} times.")
 
 
 if __name__ == "__main__":
-    import time
-
-    start_alt1 = time.time()
-    for i in range(100):
-        answer = part_1("input7.txt")
-    end_alt1 = time.time()
-    print(f"Time elapsed: {(end_alt1 - start_alt1)*10**6:.2f} us over 100 runs")
-    print(answer)
+    print("Part 1", get_winnings())
+    print("Part 2", get_winnings(part_2=True))
