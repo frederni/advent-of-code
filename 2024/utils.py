@@ -1,6 +1,11 @@
 import time
-def test_performance(func1, func2, n_runs, *args):
-    print(f"Running functions {n_runs} times ...")
+from typing import Callable
+
+def test_performance(func1: Callable, func2: Callable, *args, **kwargs):
+    verbose = kwargs.get("verbose", False)
+    n_runs = kwargs.get("n_runs", 1)
+    if verbose:
+        print(f"Running functions {n_runs} times ...")
     t0 = time.time()
     for _ in range(n_runs):
         func1(*args)
@@ -10,5 +15,6 @@ def test_performance(func1, func2, n_runs, *args):
     for _ in range(n_runs):
         func2(*args)
     duration_func2 = time.time() - t0
-    print(f"First function: {duration_func1} s, second function: {duration_func2} s")
+    if verbose:
+        print(f"First function: {duration_func1} s, second function: {duration_func2} s")
     return duration_func1, duration_func2
