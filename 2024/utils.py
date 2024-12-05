@@ -18,3 +18,8 @@ def test_performance(func1: Callable, func2: Callable, *args, **kwargs):
     if verbose:
         print(f"First function: {duration_func1} s, second function: {duration_func2} s")
     return duration_func1, duration_func2
+
+def parse_raw(file_path: str):
+    with open(file_path, 'r') as f:
+        data =  f.read()
+    return data
